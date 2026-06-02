@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SwiftReach - WhatsApp Outreach</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+      };
+    </script>
+  </head>
+  <body class="dark bg-slate-950 text-slate-100 min-h-screen">
+    <main class="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+      <header class="mb-8">
+        <h1 class="text-3xl sm:text-4xl font-bold tracking-tight">SwiftReach</h1>
+        <p class="text-slate-400 mt-2">
+          Personalized WhatsApp outreach with a smooth send-and-follow-up flow.
+        </p>
+      </header>
+
+      <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+          <h2 class="text-xl font-semibold mb-4">1) Contact Management</h2>
+
+          <div class="space-y-4">
+            <div>
+              <label for="defaultCountryCode" class="block text-sm text-slate-300 mb-2">
+                Default Country Code (used when number starts with 0)
+              </label>
+              <input
+                id="defaultCountryCode"
+                type="text"
+                value="92"
+                class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              />
+            </div>
+
+            <div>
+              <label class="block text-sm text-slate-300 mb-2">Upload CSV</label>
+              <input
+                id="csvInput"
+                type="file"
+                accept=".csv"
+                class="block w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-cyan-500 file:text-slate-900 hover:file:bg-cyan-400"
+              />
+              <p class="text-xs text-slate-500 mt-2">
+                CSV format: <code>name,phone</code> (with or without header row)
+              </p>
+            </div>
+
+            <div>
+              <label for="manualInput" class="block text-sm text-slate-300 mb-2">
+                Manual Entry
+              </label>
+              <textarea
+                id="manualInput"
+                rows="4"
+                placeholder="John Doe,+923001234567&#10;Jane,+923099998888"
+                class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              ></textarea>
+              <button
+                id="addManualBtn"
+                class="mt-3 inline-flex items-center justify-center rounded-lg bg-cyan-500 px-4 py-2 text-sm font-medium text-slate-900 hover:bg-cyan-400"
+              >
+                Add Contacts
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+          <h2 class="text-xl font-semibold mb-4">2) Message Personalization</h2>
+
+          <div class="flex gap-2 mb-3">
+            <button
+              id="insertNameVarBtn"
+              class="rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-200 hover:bg-slate-800"
+            >
+              + {{name}}
+            </button>
+            <button
+              id="insertPhoneVarBtn"
+              class="rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-200 hover:bg-slate-800"
+            >
+              + {{phone}}
+            </button>
+          </div>
+
+          <textarea
+            id="templateInput"
+            rows="8"
+            placeholder="Hi {{name}}, just checking in regarding your request."
+            class="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+          ></textarea>
+          <p class="text-xs text-slate-500 mt-2">
+            Use variables like <code>{{name}}</code> and <code>{{phone}}</code>.
+          </p>
+        </div>
+      </section>
+
+      <section class="mt-6 bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <h2 class="text-xl font-semibold">Contacts</h2>
+          <div class="text-sm text-slate-400">
+            <span id="contactCount">0</span> contacts •
+            <span id="selectedCount">0</span> selected
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-sm">
+            <thead>
+              <tr class="text-left border-b border-slate-800">
+                <th class="py-3 pr-4">
+                  <input id="selectAll" type="checkbox" class="h-4 w-4 accent-cyan-500" />
+                </th>
+                <th class="py-3 pr-4">Name</th>
+                <th class="py-3 pr-4">Phone</th>
+                <th class="py-3 pr-4">Follow-up Status</th>
+              </tr>
+            </thead>
+            <tbody id="contactTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="mt-6 bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+        <h2 class="text-xl font-semibold mb-4">3) Send Flow</h2>
+        <div class="flex flex-wrap gap-3">
+          <button
+            id="prepareSendBtn"
+            class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-slate-900 hover:bg-emerald-400"
+          >
+            Send Personalized Messages
+          </button>
+          <button
+            id="nextBtn"
+            disabled
+            class="rounded-lg bg-cyan-500 px-4 py-2 text-sm font-medium text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-cyan-400"
+          >
+            Open Next in WhatsApp
+          </button>
+          <button
+            id="resetStatusBtn"
+            class="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-200 hover:bg-slate-800"
+          >
+            Reset Statuses
+          </button>
+        </div>
+
+        <div id="flowPanel" class="mt-4 rounded-xl border border-slate-800 bg-slate-950 p-4 hidden">
+          <p class="text-slate-300">
+            Current: <span id="currentContactLabel" class="font-medium"></span>
+          </p>
+          <p class="text-slate-500 text-xs mt-1">
+            Click "Open Next in WhatsApp" to open one chat at a time.
+          </p>
+          <pre
+            id="messagePreview"
+            class="mt-3 text-xs whitespace-pre-wrap text-slate-300 rounded-lg bg-slate-900 p-3 border border-slate-800"
+          ></pre>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const contacts = [];
+      let queue = [];
+      let queueIndex = 0;
+      let idCounter = 1;
+      let lastImportSummary = "";
+
+      const csvInput = document.getElementById("csvInput");
+      const manualInput = document.getElementById("manualInput");
+      const addManualBtn = document.getElementById("addManualBtn");
+      const templateInput = document.getElementById("templateInput");
+      const insertNameVarBtn = document.getElementById("insertNameVarBtn");
+      const insertPhoneVarBtn = document.getElementById("insertPhoneVarBtn");
+      const contactTableBody = document.getElementById("contactTableBody");
+      const contactCount = document.getElementById("contactCount");
+      const selectedCount = document.getElementById("selectedCount");
+      const selectAll = document.getElementById("selectAll");
+      const prepareSendBtn = document.getElementById("prepareSendBtn");
+      const nextBtn = document.getElementById("nextBtn");
+      const resetStatusBtn = document.getElementById("resetStatusBtn");
+      const flowPanel = document.getElementById("flowPanel");
+      const currentContactLabel = document.getElementById("currentContactLabel");
+      const messagePreview = document.getElementById("messagePreview");
+      const defaultCountryCodeInput = document.getElementById("defaultCountryCode");
+
+      function getDefaultCountryCode() {
+        return (defaultCountryCodeInput.value || "92").replace(/[^\d]/g, "") || "92";
+      }
+
+      function normalizePhone(rawPhone) {
+        let digits = (rawPhone || "").toString().replace(/[^\d]/g, "");
+        if (!digits) return "";
+
+        if (digits.startsWith("00")) {
+          digits = digits.slice(2);
+        }
+
+        if (digits.startsWith("0")) {
+          digits = `${getDefaultCountryCode()}${digits.slice(1)}`;
+        }
+
+        return digits;
+      }
+
+      function interpolate(template, contact) {
+        return template
+          .replace(/{{\s*name\s*}}/gi, contact.name)
+          .replace(/{{\s*phone\s*}}/gi, contact.phone);
+      }
+
+      function normalizeName(name) {
+        return (name || "")
+          .trim()
+          .toLowerCase()
+          .replace(/\s+/g, " ");
+      }
+
+      function statusBadge(status) {
+        const map = {
+          "Not Sent": "bg-slate-700 text-slate-200",
+          Sent: "bg-emerald-900 text-emerald-300 border border-emerald-700",
+          Queued: "bg-amber-900 text-amber-300 border border-amber-700",
+        };
+        return `<span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs ${map[status] || map["Not Sent"]}">${status}</span>`;
+      }
+
+      function renderContacts() {
+        contactTableBody.innerHTML = "";
+
+        contacts.forEach((contact) => {
+          const tr = document.createElement("tr");
+          tr.className = "border-b border-slate-800";
+          tr.innerHTML = `
+            <td class="py-3 pr-4">
+              <input data-id="${contact.id}" class="row-check h-4 w-4 accent-cyan-500" type="checkbox" ${contact.selected ? "checked" : ""} />
+            </td>
+            <td class="py-3 pr-4">${contact.name}</td>
+            <td class="py-3 pr-4">${contact.phone}</td>
+            <td class="py-3 pr-4">${statusBadge(contact.status)}</td>
+          `;
+          contactTableBody.appendChild(tr);
+        });
+
+        contactCount.textContent = contacts.length;
+        selectedCount.textContent = contacts.filter((c) => c.selected).length;
+        selectAll.checked = contacts.length > 0 && contacts.every((c) => c.selected);
+      }
+
+      function addContact(name, phone) {
+        const cleanName = (name || "").trim();
+        const normalizedName = normalizeName(cleanName);
+        const cleanPhone = normalizePhone(phone);
+        if (!cleanName || !cleanPhone || cleanPhone.length < 8) {
+          return { added: false, reason: "invalid" };
+        }
+
+        const isDuplicate = contacts.some(
+          (contact) =>
+            normalizeName(contact.name) === normalizedName || contact.phone === cleanPhone
+        );
+        if (isDuplicate) {
+          return { added: false, reason: "duplicate" };
+        }
+
+        contacts.push({
+          id: idCounter++,
+          name: cleanName,
+          phone: cleanPhone,
+          selected: true,
+          status: "Not Sent",
+        });
+        return { added: true };
+      }
+
+      function parseCSVRow(line) {
+        const cells = [];
+        let current = "";
+        let inQuotes = false;
+
+        for (let i = 0; i < line.length; i += 1) {
+          const char = line[i];
+          const next = line[i + 1];
+
+          if (char === '"' && inQuotes && next === '"') {
+            current += '"';
+            i += 1;
+            continue;
+          }
+
+          if (char === '"') {
+            inQuotes = !inQuotes;
+            continue;
+          }
+
+          if (char === "," && !inQuotes) {
+            cells.push(current.trim());
+            current = "";
+            continue;
+          }
+
+          current += char;
+        }
+
+        cells.push(current.trim());
+        return cells;
+      }
+
+      function guessColumnIndex(headers, targets, fallback) {
+        const idx = headers.findIndex((h) =>
+          targets.some((t) => h === t || h.includes(t))
+        );
+        return idx >= 0 ? idx : fallback;
+      }
+
+      function parseCSV(text) {
+        const lines = text.split(/\r?\n/).filter((line) => line.trim().length > 0);
+        if (!lines.length) return;
+
+        const rows = lines.map((line) => parseCSVRow(line));
+        const firstRow = rows[0].map((v) => v.trim().toLowerCase());
+
+        const hasHeader = firstRow.some((v) => v.includes("name") || v.includes("phone"));
+        let nameIndex = 0;
+        let phoneIndex = 1;
+
+        if (hasHeader) {
+          nameIndex = guessColumnIndex(firstRow, ["name", "business name"], 0);
+          phoneIndex = guessColumnIndex(
+            firstRow,
+            ["phone", "mobile", "whatsapp", "contact"],
+            1
+          );
+        }
+
+        const start = hasHeader ? 1 : 0;
+        let added = 0;
+        let duplicates = 0;
+        let invalid = 0;
+
+        for (let i = start; i < rows.length; i += 1) {
+          const name = rows[i][nameIndex] || "";
+          const phone = rows[i][phoneIndex] || "";
+          const result = addContact(name, phone);
+          if (result.added) added += 1;
+          else if (result.reason === "duplicate") duplicates += 1;
+          else invalid += 1;
+        }
+
+        lastImportSummary = `CSV sync: ${added} added, ${duplicates} duplicates skipped, ${invalid} invalid rows skipped.`;
+      }
+
+      function addFromManualInput() {
+        const lines = manualInput.value
+          .split(/\r?\n/)
+          .map((line) => line.trim())
+          .filter(Boolean);
+        let added = 0;
+        let duplicates = 0;
+        let invalid = 0;
+
+        lines.forEach((line) => {
+          const [name = "", phone = ""] = line.split(",");
+          const result = addContact(name, phone);
+          if (result.added) added += 1;
+          else if (result.reason === "duplicate") duplicates += 1;
+          else invalid += 1;
+        });
+
+        manualInput.value = "";
+        alert(
+          `Manual sync: ${added} added, ${duplicates} duplicates skipped, ${invalid} invalid rows skipped.`
+        );
+        renderContacts();
+      }
+
+      function prepareQueue() {
+        const selected = contacts.filter((c) => c.selected);
+        if (!selected.length) {
+          alert("Please select at least one contact.");
+          return;
+        }
+        if (!templateInput.value.trim()) {
+          alert("Please write a message template first.");
+          return;
+        }
+
+        queue = selected.map((contact) => ({
+          id: contact.id,
+          name: contact.name,
+          phone: contact.phone,
+          message: interpolate(templateInput.value, contact),
+        }));
+        queueIndex = 0;
+
+        contacts.forEach((contact) => {
+          if (contact.selected && contact.status !== "Sent") {
+            contact.status = "Queued";
+          }
+        });
+
+        nextBtn.disabled = false;
+        flowPanel.classList.remove("hidden");
+        updateFlowPanel();
+        renderContacts();
+      }
+
+      function updateFlowPanel() {
+        if (!queue.length || queueIndex >= queue.length) {
+          currentContactLabel.textContent = "All queued messages opened.";
+          messagePreview.textContent = "Done. You can reset statuses or prepare a new queue.";
+          nextBtn.disabled = true;
+          return;
+        }
+
+        const current = queue[queueIndex];
+        currentContactLabel.textContent = `${current.name} (${current.phone})`;
+        messagePreview.textContent = current.message;
+      }
+
+      function openNext() {
+        if (queueIndex >= queue.length) return;
+
+        const current = queue[queueIndex];
+        const encodedText = encodeURIComponent(current.message);
+        const url = `https://wa.me/${current.phone}?text=${encodedText}`;
+        window.open(url, "_blank");
+
+        const contact = contacts.find((c) => c.id === current.id);
+        if (contact) contact.status = "Sent";
+
+        queueIndex += 1;
+        renderContacts();
+        updateFlowPanel();
+      }
+
+      csvInput.addEventListener("change", (event) => {
+        const file = event.target.files && event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          parseCSV(reader.result || "");
+          renderContacts();
+          if (lastImportSummary) alert(lastImportSummary);
+        };
+        reader.readAsText(file);
+      });
+
+      addManualBtn.addEventListener("click", addFromManualInput);
+
+      selectAll.addEventListener("change", (event) => {
+        contacts.forEach((contact) => {
+          contact.selected = event.target.checked;
+        });
+        renderContacts();
+      });
+
+      contactTableBody.addEventListener("change", (event) => {
+        if (!event.target.classList.contains("row-check")) return;
+        const id = Number(event.target.getAttribute("data-id"));
+        const contact = contacts.find((c) => c.id === id);
+        if (contact) contact.selected = event.target.checked;
+        renderContacts();
+      });
+
+      insertNameVarBtn.addEventListener("click", () => {
+        templateInput.value += "{{name}}";
+        templateInput.focus();
+      });
+
+      insertPhoneVarBtn.addEventListener("click", () => {
+        templateInput.value += "{{phone}}";
+        templateInput.focus();
+      });
+
+      prepareSendBtn.addEventListener("click", prepareQueue);
+      nextBtn.addEventListener("click", openNext);
+
+      resetStatusBtn.addEventListener("click", () => {
+        contacts.forEach((contact) => {
+          contact.status = "Not Sent";
+        });
+        queue = [];
+        queueIndex = 0;
+        nextBtn.disabled = true;
+        flowPanel.classList.add("hidden");
+        renderContacts();
+      });
+
+      renderContacts();
+    </script>
+  </body>
+</html>
