@@ -1,4 +1,3 @@
-SwiftReach
 SwiftReach is a simple, browser-based WhatsApp outreach dashboard for sending personalized messages from a contact list. It is designed for fast follow-ups, light CRM-style workflows, and small team outreach campaigns.
 
 ## Features
